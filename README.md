@@ -1,1 +1,1 @@
-# Pygrations - Python database migrations manager
+# Pygration - Python database migrations manager
