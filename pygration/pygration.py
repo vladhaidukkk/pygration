@@ -1,12 +1,9 @@
-import time
-import pathlib
-import tomllib
+from time import time
+from pathlib import Path
+from math import floor
 
 
-# TODO: functions should be independent from config or other global things!
-def create(name):
-    with open("pygration.toml", "rb") as config:
-        data = tomllib.load(config)
-        filename = pathlib.Path(data["dir"], f"{round(time.time())}_{name}.sql")
-        with open(filename, "w") as file:
-            file.write("-- UP\n\n\n-- DOWN\n\n")
+def create(name, *, directory):
+    file = Path(directory, f"{floor(time())}_{name}.sql")
+    with open(file, "w") as file_obj:
+        file_obj.write("-- UP\n\n\n-- DOWN\n\n")
