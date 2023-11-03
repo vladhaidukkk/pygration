@@ -1,4 +1,5 @@
 import argparse
+import pygration
 
 
 def create_parser():
@@ -13,21 +14,23 @@ def create_parser():
         help="create a migration",
         description="Create a migration",
     )
-    migrate = subparsers.add_parser(
-        "migrate",
-        help="apply migrations",
-        description="Apply migrations",
-    )
-    rollback = subparsers.add_parser(
-        "rollback",
-        help="rollback migrations",
-        description="Rollback migrations",
-    )
-    info = subparsers.add_parser(
-        "info",
-        help="display info about migrations",
-        description="Display info about migrations",
-    )
+    create.add_argument("name", help="migration name")
+
+    # migrate = subparsers.add_parser(
+    #     "migrate",
+    #     help="apply migrations",
+    #     description="Apply migrations",
+    # )
+    # rollback = subparsers.add_parser(
+    #     "rollback",
+    #     help="rollback migrations",
+    #     description="Rollback migrations",
+    # )
+    # info = subparsers.add_parser(
+    #     "info",
+    #     help="display info about migrations",
+    #     description="Display info about migrations",
+    # )
 
     return parser
 
@@ -35,7 +38,10 @@ def create_parser():
 def main():
     parser = create_parser()
     args = parser.parse_args()
-    print(args)
+
+    match args.command:
+        case "create":
+            pygration.create(args.name)
 
 
 if __name__ == "__main__":
