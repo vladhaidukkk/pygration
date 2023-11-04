@@ -2,8 +2,13 @@ import argparse
 import tomllib
 import pathlib
 import os
+import re
+
+from dotenv import load_dotenv
 
 import pygration
+
+load_dotenv()
 
 
 class Config:
@@ -31,9 +36,49 @@ class Config:
             raise FileNotFoundError(f"configuration file '{file}' doesn't "
                                     f"exist")
 
+    @staticmethod
+    def _inject_env_var(value):
+        if m := re.match(r"^\${(?P<var>.+)}$", value):
+            return os.getenv(m.group("var"))
+        return value
+
+    @property
+    def provider(self):
+        return self._config.get("provider")
+
     @property
     def dir(self):
         return self._config.get("dir")
+
+    @property
+    def username(self):
+        value = self._config.get("connection", {}).get("username")
+        return value and self._inject_env_var(value)
+
+    @property
+    def password(self):
+        value = self._config.get("connection", {}).get("password")
+        return value and self._inject_env_var(value)
+
+    @property
+    def host(self):
+        value = self._config.get("connection", {}).get("host")
+        return value and self._inject_env_var(value)
+
+    @property
+    def port(self):
+        value = self._config.get("connection", {}).get("port")
+        return value and self._inject_env_var(value)
+
+    @property
+    def database(self):
+        value = self._config.get("connection", {}).get("database")
+        return value and self._inject_env_var(value)
+
+    @property
+    def schema(self):
+        value = self._config.get("connection", {}).get("schema")
+        return self._inject_env_var(value) if value else "public"
 
 
 def create_parser():
