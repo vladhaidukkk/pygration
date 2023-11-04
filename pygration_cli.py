@@ -1,21 +1,39 @@
 import argparse
 import tomllib
 import pathlib
+import os
 
 import pygration
 
 
-DEFAULT_CONFIG = "pygration.toml"
-
-
 class Config:
-    def __init__(self, file):
-        with open(file, "rb") as file_obj:
-            self._config = tomllib.load(file_obj)
+    DEFAULTS = ["pygration.toml", "pyproject.toml"]
+
+    def __init__(self, file=None):
+        if file is None:
+            for default in Config.DEFAULTS:
+                if os.path.exists(default):
+                    file = default
+                    break
+            else:
+                raise FileNotFoundError(f"neither {
+                    " nor ".join(Config.DEFAULTS)
+                } exist")
+
+        try:
+            with open(file, "rb") as file_obj:
+                if file == Config.DEFAULTS[-1]:
+                    tool_table = tomllib.load(file_obj).get("tool", {})
+                    self._config = tool_table.get("pygration", {})
+                else:
+                    self._config = tomllib.load(file_obj)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"configuration file '{file}' doesn't "
+                                    f"exist")
 
     @property
-    def directory(self):
-        return self._config.get("directory")
+    def dir(self):
+        return self._config.get("dir")
 
 
 def create_parser():
@@ -27,13 +45,12 @@ def create_parser():
         "-c",
         "--config",
         type=pathlib.Path,
-        default=DEFAULT_CONFIG,
-        help=f"pygration config (default: {DEFAULT_CONFIG})",
+        help=f"pygration config (default: {", ".join(Config.DEFAULTS)})",
     )
     subparsers = parser.add_subparsers(
         title="Commands",
         dest="command",
-        required=True,
+        # required=True, # todo: uncomment
     )
 
     create = subparsers.add_parser(
@@ -69,15 +86,15 @@ def main():
     try:
         config = Config(args.config)
     except FileNotFoundError as err:
-        parser.error(f"configuration file '{err.filename}' doesn't exist")
+        parser.error(str(err))
     else:
         match args.command:
             case "create":
                 try:
-                    pygration.create(args.name, directory=config.directory)
+                    pygration.create(args.name, directory=config.dir)
                 except FileNotFoundError:
                     parser.error(
-                        f"directory '{config.directory}' doesn't exist"
+                        f"directory '{config.dir}' doesn't exist"
                     )
 
 

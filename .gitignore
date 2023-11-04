@@ -7,3 +7,5 @@ __pycache__/
 # temporary for development
 pygration.toml
 migrations/
+.env
+pyproject.toml
