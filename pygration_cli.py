@@ -78,7 +78,7 @@ class Config:
     @property
     def schema(self):
         value = self._config.get("connection", {}).get("schema")
-        return self._inject_env_var(value) if value else "public"
+        return value and self._inject_env_var(value)
 
 
 def create_parser():
@@ -105,11 +105,12 @@ def create_parser():
     )
     create.add_argument("name", help="migration name")
 
-    # migrate = subparsers.add_parser(
-    #     "migrate",
-    #     help="apply migrations",
-    #     description="Apply migrations",
-    # )
+    migrate = subparsers.add_parser(
+        "migrate",
+        help="apply migrations",
+        description="Apply migrations",
+    )
+
     # rollback = subparsers.add_parser(
     #     "rollback",
     #     help="rollback migrations",
@@ -134,6 +135,7 @@ def main():
         parser.error(str(err))
     else:
         match args.command:
+            # todo: move names to consts (enum maybe)
             case "create":
                 try:
                     pygration.create(args.name, directory=config.dir)
@@ -141,6 +143,17 @@ def main():
                     parser.error(
                         f"directory '{config.dir}' doesn't exist"
                     )
+            case "migrate":
+                pygration.migrate(
+                    provider=config.provider,
+                    directory=config.dir,
+                    username=config.username,
+                    password=config.password,
+                    host=config.host,
+                    port=config.port,
+                    database=config.database,
+                    schema=config.schema
+                )
 
 
 if __name__ == "__main__":

@@ -1,1 +1,1 @@
-from .pygration import create
+from .pygration import create, migrate
