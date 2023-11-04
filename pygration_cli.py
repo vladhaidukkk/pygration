@@ -111,11 +111,12 @@ def create_parser():
         description="Apply migrations",
     )
 
-    # rollback = subparsers.add_parser(
-    #     "rollback",
-    #     help="rollback migrations",
-    #     description="Rollback migrations",
-    # )
+    rollback = subparsers.add_parser(
+        "rollback",
+        help="rollback migrations",
+        description="Rollback migrations",
+    )
+
     # info = subparsers.add_parser(
     #     "info",
     #     help="display info about migrations",
@@ -145,6 +146,17 @@ def main():
                     )
             case "migrate":
                 pygration.migrate(
+                    provider=config.provider,
+                    directory=config.dir,
+                    username=config.username,
+                    password=config.password,
+                    host=config.host,
+                    port=config.port,
+                    database=config.database,
+                    schema=config.schema
+                )
+            case "rollback":
+                pygration.rollback(
                     provider=config.provider,
                     directory=config.dir,
                     username=config.username,
