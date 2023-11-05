@@ -122,6 +122,12 @@ def create_parser():
         help="rollback migrations",
         description="Rollback migrations",
     )
+    rollback.add_argument(
+        "-p",
+        "--prev-one",
+        action="store_true",
+        help="rollback only the previous migration",
+    )
 
     # info = subparsers.add_parser(
     #     "info",
@@ -172,6 +178,7 @@ def main():
                     port=config.port,
                     database=config.database,
                     schema=config.schema,
+                    single=args.prev_one,
                 )
 
 

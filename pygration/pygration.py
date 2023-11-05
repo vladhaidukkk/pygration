@@ -78,7 +78,7 @@ def migrate(*, provider, directory, username, password, host, port, database,
 
 
 def rollback(*, provider, directory, username, password, host, port, database,
-             schema=None):
+             schema=None, single=False):
     if schema is None:
         schema = "public"
 
@@ -101,6 +101,8 @@ def rollback(*, provider, directory, username, password, host, port, database,
                     "id": mid,
                     "query": _get_query(entry, section="down"),
                 })
+                if single:
+                    break
 
     match provider:
         case "postgresql":
