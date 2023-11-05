@@ -30,7 +30,7 @@ def _get_query(file, *, section):
 
 
 def migrate(*, provider, directory, username, password, host, port, database,
-            schema=None):
+            schema=None, single=False):
     if schema is None:
         schema = "public"
 
@@ -60,6 +60,8 @@ def migrate(*, provider, directory, username, password, host, port, database,
                     "name": name,
                     "query": _get_query(entry, section="up"),
                 })
+                if single:
+                    break
 
     match provider:
         case "postgresql":

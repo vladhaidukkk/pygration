@@ -110,6 +110,12 @@ def create_parser():
         help="apply migrations",
         description="Apply migrations",
     )
+    migrate.add_argument(
+        "-n",
+        "--next-one",
+        action="store_true",
+        help="execute only the next migration",
+    )
 
     rollback = subparsers.add_parser(
         "rollback",
@@ -153,7 +159,8 @@ def main():
                     host=config.host,
                     port=config.port,
                     database=config.database,
-                    schema=config.schema
+                    schema=config.schema,
+                    single=args.next_one,
                 )
             case "rollback":
                 pygration.rollback(
@@ -164,7 +171,7 @@ def main():
                     host=config.host,
                     port=config.port,
                     database=config.database,
-                    schema=config.schema
+                    schema=config.schema,
                 )
 
 
