@@ -34,22 +34,45 @@ def migrate(*, provider, directory, username, password, host, port, database,
     if schema is None:
         schema = "public"
 
-    queries = []
+    conn = psycopg2.connect(f"postgres://{username}:{password}"
+                            f"@{host}:{port}/{database}")
+    cur = conn.cursor()
+    cur.execute(f"SET search_path TO {schema}")
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS _pygration_migrations (
+            id BIGINT PRIMARY KEY,
+            name TEXT NOT NULL,
+            executed_at TIMESTAMP DEFAULT NOW() NOT NULL
+        );
+    """)
+    cur.execute("SELECT * FROM _pygration_migrations")
+    migrations = cur.fetchall()
+    existing_ids = [m[0] for m in migrations]
+
+    new_migrations = []
     for entry in sorted(os.scandir(directory), key=lambda e: e.name):
         if entry.is_file() and entry.name.endswith(".sql"):
-            queries.append(_get_query(entry, section="up"))
+            mid, name = entry.name[:-4].split("_", 1)
+            if int(mid) not in existing_ids:
+                new_migrations.append({
+                    "id": mid,
+                    "name": name,
+                    "query": _get_query(entry, section="up"),
+                })
 
     match provider:
         case "postgresql":
-            conn = psycopg2.connect(f"postgres://{username}:{password}"
-                                    f"@{host}:{port}/{database}")
-            cur = conn.cursor()
-            cur.execute(f"SET search_path TO {schema}")
-            for query in queries:
-                cur.execute(query)
+            for m in new_migrations:
+                cur.execute(m["query"])
+                cur.execute(f"""
+                    INSERT INTO _pygration_migrations (id, name)
+                    VALUES ({m["id"]}, '{m["name"]}');
+                """)
             conn.commit()
-            cur.close()
-            conn.close()
+
+    cur.close()
+    conn.close()
 
 
 def rollback(*, provider, directory, username, password, host, port, database,
@@ -57,20 +80,34 @@ def rollback(*, provider, directory, username, password, host, port, database,
     if schema is None:
         schema = "public"
 
-    queries = []
+    conn = psycopg2.connect(f"postgres://{username}:{password}"
+                            f"@{host}:{port}/{database}")
+    cur = conn.cursor()
+    cur.execute(f"SET search_path TO {schema}")
+
+    cur.execute("SELECT * FROM _pygration_migrations")
+    migrations = cur.fetchall()
+    existing_ids = [m[0] for m in migrations]
+
+    rollbacks = []
     for entry in sorted(os.scandir(directory), key=lambda e: e.name,
                         reverse=True):
         if entry.is_file() and entry.name.endswith(".sql"):
-            queries.append(_get_query(entry, section="down"))
+            mid = entry.name.split("_", 1)[0]
+            if int(mid) in existing_ids:
+                rollbacks.append({
+                    "id": mid,
+                    "query": _get_query(entry, section="down"),
+                })
 
     match provider:
         case "postgresql":
-            conn = psycopg2.connect(f"postgres://{username}:{password}"
-                                    f"@{host}:{port}/{database}")
-            cur = conn.cursor()
-            cur.execute(f"SET search_path TO {schema}")
-            for query in queries:
-                cur.execute(query)
+            for r in rollbacks:
+                cur.execute(r["query"])
+                cur.execute(f"""
+                    DELETE FROM _pygration_migrations WHERE id = {r["id"]};
+                """)
             conn.commit()
-            cur.close()
-            conn.close()
+
+    cur.close()
+    conn.close()
