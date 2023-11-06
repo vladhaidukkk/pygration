@@ -34,47 +34,45 @@ def migrate(*, provider, directory, username, password, host, port, database,
     if schema is None:
         schema = "public"
 
-    conn = psycopg2.connect(f"postgres://{username}:{password}"
-                            f"@{host}:{port}/{database}")
-    cur = conn.cursor()
-    cur.execute(f"SET search_path TO {schema}")
-
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS _pygration_migrations (
-            id BIGINT PRIMARY KEY,
-            name TEXT NOT NULL,
-            executed_at TIMESTAMP DEFAULT NOW() NOT NULL
-        );
-    """)
-    cur.execute("SELECT * FROM _pygration_migrations")
-    migrations = cur.fetchall()
-    existing_ids = [m[0] for m in migrations]
-
-    new_migrations = []
-    for entry in sorted(os.scandir(directory), key=lambda e: e.name):
-        if entry.is_file() and entry.name.endswith(".sql"):
-            mid, name = entry.name[:-4].split("_", 1)
-            if int(mid) not in existing_ids:
-                new_migrations.append({
-                    "id": mid,
-                    "name": name,
-                    "query": _get_query(entry, section="up"),
-                })
-                if single:
-                    break
-
     match provider:
         case "postgresql":
-            for m in new_migrations:
-                cur.execute(m["query"])
-                cur.execute(f"""
-                    INSERT INTO _pygration_migrations (id, name)
-                    VALUES ({m["id"]}, '{m["name"]}');
-                """)
-            conn.commit()
+            conn = psycopg2.connect(user=username, password=password, host=host,
+                                    port=port, database=database)
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(f"SET search_path TO {schema}")
+                    cur.execute("""
+                        CREATE TABLE IF NOT EXISTS _pygration_migrations (
+                            id BIGINT PRIMARY KEY,
+                            name TEXT NOT NULL,
+                            executed_at TIMESTAMP DEFAULT NOW() NOT NULL
+                        );
+                    """)
+                    cur.execute("SELECT * FROM _pygration_migrations;")
+                    existing_mids = [m[0] for m in cur.fetchall()]
 
-    cur.close()
-    conn.close()
+                    new_migrations = []
+                    for entry in sorted(os.scandir(directory),
+                                        key=lambda e: e.name):
+                        if entry.is_file() and entry.name.endswith(".sql"):
+                            mid, name = entry.name[:-4].split("_", 1)
+                            mid = int(mid)
+                            if mid not in existing_mids:
+                                new_migrations.append({
+                                    "id": mid,
+                                    "name": name,
+                                    "query": _get_query(entry, section="up"),
+                                })
+                                if single:
+                                    break
+
+                    for m in new_migrations:
+                        cur.execute(m["query"])
+                        cur.execute(f"""
+                            INSERT INTO _pygration_migrations (id, name)
+                            VALUES ({m["id"]}, '{m["name"]}');
+                        """)
+            conn.close()
 
 
 def rollback(*, provider, directory, username, password, host, port, database,
@@ -82,36 +80,34 @@ def rollback(*, provider, directory, username, password, host, port, database,
     if schema is None:
         schema = "public"
 
-    conn = psycopg2.connect(f"postgres://{username}:{password}"
-                            f"@{host}:{port}/{database}")
-    cur = conn.cursor()
-    cur.execute(f"SET search_path TO {schema}")
-
-    cur.execute("SELECT * FROM _pygration_migrations")
-    migrations = cur.fetchall()
-    existing_ids = [m[0] for m in migrations]
-
-    rollbacks = []
-    for entry in sorted(os.scandir(directory), key=lambda e: e.name,
-                        reverse=True):
-        if entry.is_file() and entry.name.endswith(".sql"):
-            mid = entry.name.split("_", 1)[0]
-            if int(mid) in existing_ids:
-                rollbacks.append({
-                    "id": mid,
-                    "query": _get_query(entry, section="down"),
-                })
-                if single:
-                    break
-
     match provider:
         case "postgresql":
-            for r in rollbacks:
-                cur.execute(r["query"])
-                cur.execute(f"""
-                    DELETE FROM _pygration_migrations WHERE id = {r["id"]};
-                """)
-            conn.commit()
+            conn = psycopg2.connect(user=username, password=password, host=host,
+                                    port=port, database=database)
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(f"SET search_path TO {schema}")
+                    cur.execute("SELECT * FROM _pygration_migrations;")
+                    existing_mids = [m[0] for m in cur.fetchall()]
 
-    cur.close()
-    conn.close()
+                    rollbacks = []
+                    for entry in sorted(os.scandir(directory),
+                                        key=lambda e: e.name,
+                                        reverse=True):
+                        if entry.is_file() and entry.name.endswith(".sql"):
+                            mid = entry.name.split("_", 1)[0]
+                            if int(mid) in existing_mids:
+                                rollbacks.append({
+                                    "id": mid,
+                                    "query": _get_query(entry, section="down"),
+                                })
+                                if single:
+                                    break
+
+                    for r in rollbacks:
+                        cur.execute(r["query"])
+                        cur.execute(f"""
+                            DELETE FROM _pygration_migrations 
+                            WHERE id = {r["id"]};
+                        """)
+            conn.close()
