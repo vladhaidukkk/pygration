@@ -95,7 +95,7 @@ def create_parser():
     subparsers = parser.add_subparsers(
         title="Commands",
         dest="command",
-        # required=True, # todo: uncomment
+        required=True,
     )
 
     create = subparsers.add_parser(
@@ -109,12 +109,20 @@ def create_parser():
         "migrate",
         help="apply migrations",
         description="Apply migrations",
+        epilog="Priority of options: --one over --id. If no option is "
+               "specified, all migrations will be applied"
     )
     migrate.add_argument(
-        "-n",
-        "--next-one",
+        "-o",
+        "--one",
         action="store_true",
-        help="execute only the next migration",
+        help="apply one migration",
+    )
+    migrate.add_argument(
+        "-i",
+        "--id",
+        type=int,
+        help="apply migrations up to the specified id",
     )
 
     rollback = subparsers.add_parser(
@@ -157,6 +165,8 @@ def main():
                         f"directory '{config.dir}' doesn't exist"
                     )
             case "migrate":
+                # todo: give a feedback what have been done (maybe return a
+                #  value of successfully applied migrations and log it)
                 pygration.migrate(
                     provider=config.provider,
                     directory=config.dir,
@@ -166,7 +176,8 @@ def main():
                     port=config.port,
                     database=config.database,
                     schema=config.schema,
-                    single=args.next_one,
+                    one=args.one,
+                    id_=args.id,
                 )
             case "rollback":
                 pygration.rollback(

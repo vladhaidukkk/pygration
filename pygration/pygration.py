@@ -30,7 +30,7 @@ def _get_query(file, *, section):
 
 
 def migrate(*, provider, directory, username, password, host, port, database,
-            schema=None, single=False):
+            schema=None, one=False, id_=None):
     if schema is None:
         schema = "public"
 
@@ -63,7 +63,9 @@ def migrate(*, provider, directory, username, password, host, port, database,
                                     "name": name,
                                     "query": _get_query(entry, section="up"),
                                 })
-                                if single:
+                                if one:
+                                    break
+                                elif id_ == mid:
                                     break
 
                     for m in new_migrations:
