@@ -1,2 +1,17 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pygration"
+version = "0.0.1"
+
+[project.scripts]
+pygration = "pygration_cli:main"
+
+[tool.setuptools]
+py-modules = ["pygration_cli"]
+packages = ["pygration"]
+
 [tool.isort]
 profile = "black"

@@ -163,15 +163,12 @@ def main():
         parser.error(str(err))
     else:
         match args.command:
-            # todo: move names to consts (enum maybe)
             case "create":
                 try:
                     pygration.create(args.name, directory=config.dir)
                 except FileNotFoundError:
                     parser.error(f"directory '{config.dir}' doesn't exist")
             case "migrate":
-                # todo: give a feedback what have been done (maybe return a
-                #  value of successfully applied migrations and log it)
                 pygration.migrate(
                     provider=config.provider,
                     directory=config.dir,
