@@ -1,8 +1,8 @@
 import argparse
-import tomllib
-import pathlib
 import os
+import pathlib
 import re
+import tomllib
 
 from dotenv import load_dotenv
 
@@ -21,9 +21,9 @@ class Config:
                     file = default
                     break
             else:
-                raise FileNotFoundError(f"neither {
-                    " nor ".join(Config.DEFAULTS)
-                } exist")
+                raise FileNotFoundError(
+                    f"neither {' nor '.join(Config.DEFAULTS)} exist"
+                )
 
         try:
             with open(file, "rb") as file_obj:
@@ -33,8 +33,7 @@ class Config:
                 else:
                     self._config = tomllib.load(file_obj)
         except FileNotFoundError:
-            raise FileNotFoundError(f"configuration file '{file}' doesn't "
-                                    f"exist")
+            raise FileNotFoundError(f"configuration file '{file}' doesn't " f"exist")
 
     @staticmethod
     def _inject_env_var(value):
@@ -90,12 +89,12 @@ def create_parser():
         "-c",
         "--config",
         type=pathlib.Path,
-        help=f"pygration config (default: {", ".join(Config.DEFAULTS)})",
+        help=f"pygration config (default: {', '.join(Config.DEFAULTS)})",
     )
     subparsers = parser.add_subparsers(
         title="Commands",
         dest="command",
-        # required=True, # todo: uncomment
+        required=True,
     )
 
     create = subparsers.add_parser(
@@ -109,31 +108,47 @@ def create_parser():
         "migrate",
         help="apply migrations",
         description="Apply migrations",
+        epilog="Priority of options: --one over --id. If no option is "
+        "specified, all migrations will be applied",
     )
     migrate.add_argument(
-        "-n",
-        "--next-one",
+        "-o",
+        "--one",
         action="store_true",
-        help="execute only the next migration",
+        help="apply one migration",
+    )
+    migrate.add_argument(
+        "-i",
+        "--id",
+        type=int,
+        help="apply migrations up to the specified id",
     )
 
     rollback = subparsers.add_parser(
         "rollback",
         help="rollback migrations",
         description="Rollback migrations",
+        epilog="Priority of options: --one over --id. If no option is "
+        "specified, all migrations will be rolled back",
     )
     rollback.add_argument(
-        "-p",
-        "--prev-one",
+        "-o",
+        "--one",
         action="store_true",
         help="rollback only the previous migration",
     )
+    rollback.add_argument(
+        "-i",
+        "--id",
+        type=int,
+        help="rollback migrations up to the specified id",
+    )
 
-    # info = subparsers.add_parser(
-    #     "info",
-    #     help="display info about migrations",
-    #     description="Display info about migrations",
-    # )
+    subparsers.add_parser(
+        "details",
+        help="display details about migrations",
+        description="Display details about migrations",
+    )
 
     return parser
 
@@ -148,14 +163,11 @@ def main():
         parser.error(str(err))
     else:
         match args.command:
-            # todo: move names to consts (enum maybe)
             case "create":
                 try:
                     pygration.create(args.name, directory=config.dir)
                 except FileNotFoundError:
-                    parser.error(
-                        f"directory '{config.dir}' doesn't exist"
-                    )
+                    parser.error(f"directory '{config.dir}' doesn't exist")
             case "migrate":
                 pygration.migrate(
                     provider=config.provider,
@@ -166,7 +178,8 @@ def main():
                     port=config.port,
                     database=config.database,
                     schema=config.schema,
-                    single=args.next_one,
+                    one=args.one,
+                    id_=args.id,
                 )
             case "rollback":
                 pygration.rollback(
@@ -178,7 +191,18 @@ def main():
                     port=config.port,
                     database=config.database,
                     schema=config.schema,
-                    single=args.prev_one,
+                    one=args.one,
+                    id_=args.id,
+                )
+            case "details":
+                pygration.print_details(
+                    provider=config.provider,
+                    username=config.username,
+                    password=config.password,
+                    host=config.host,
+                    port=config.port,
+                    database=config.database,
+                    schema=config.schema,
                 )
 
 

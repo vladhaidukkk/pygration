@@ -3,9 +3,11 @@
 .venv/
 venv/
 __pycache__/
+.mypy_cache/
+dist/
+*.egg-info/
 
 # temporary for development
 pygration.toml
 migrations/
 .env
-pyproject.toml
