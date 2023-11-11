@@ -116,3 +116,42 @@ def rollback(*, provider, directory, username, password, host, port, database,
                             WHERE id = {r["id"]};
                         """)
             conn.close()
+
+
+def print_details(*, provider, username, password, host, port, database,
+                  schema=None):
+    if schema is None:
+        schema = "public"
+
+    match provider:
+        case "postgresql":
+            conn = psycopg2.connect(user=username, password=password, host=host,
+                                    port=port, database=database)
+            with conn:
+                with conn.cursor() as cur:
+                    cur.execute(f"SET search_path TO {schema}")
+                    cur.execute("SELECT * FROM _pygration_migrations;")
+                    migrations = cur.fetchall()
+
+                    id_col_width = len(str(migrations[-1][0]))
+                    name_col_width = len(
+                        max(migrations, key=lambda m: len(m[1]))[1]
+                    )
+                    header = (f"{"ID".ljust(id_col_width)} | "
+                              f"{"NAME".ljust(name_col_width)} | EXECUTED AT")
+                    records = [(f"{str(m[0]).ljust(id_col_width)} | "
+                                f"{m[1].ljust(name_col_width)} | "
+                                f"{m[2]:%Y-%m-%d}")
+                               for m in migrations]
+                    header_width = len(header)
+                    record_width = len(max(records, key=len))
+                    if header_width > record_width:
+                        details_width = header_width
+                    else:
+                        details_width = record_width
+
+                    print(header)
+                    print("-" * details_width)
+                    for record in records:
+                        print(record)
+            conn.close()

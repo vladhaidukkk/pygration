@@ -145,11 +145,11 @@ def create_parser():
         help="rollback migrations up to the specified id",
     )
 
-    # info = subparsers.add_parser(
-    #     "info",
-    #     help="display info about migrations",
-    #     description="Display info about migrations",
-    # )
+    subparsers.add_parser(
+        "details",
+        help="display details about migrations",
+        description="Display details about migrations",
+    )
 
     return parser
 
@@ -199,6 +199,16 @@ def main():
                     schema=config.schema,
                     one=args.one,
                     id_=args.id,
+                )
+            case "details":
+                pygration.print_details(
+                    provider=config.provider,
+                    username=config.username,
+                    password=config.password,
+                    host=config.host,
+                    port=config.port,
+                    database=config.database,
+                    schema=config.schema,
                 )
 
 
