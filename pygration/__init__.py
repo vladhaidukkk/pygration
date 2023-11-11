@@ -1,1 +1,1 @@
-from .pygration import create, migrate, rollback, print_details
+from .pygration import create, migrate, print_details, rollback  # noqa: F401

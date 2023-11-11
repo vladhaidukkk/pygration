@@ -1,7 +1,7 @@
 import os
-from time import time
-from pathlib import Path
 from math import floor
+from pathlib import Path
+from time import time
 
 import psycopg2
 
@@ -29,40 +29,59 @@ def _get_query(file, *, section):
     return "".join(query_lines).strip()
 
 
-def migrate(*, provider, directory, username, password, host, port, database,
-            schema=None, one=False, id_=None):
+def migrate(
+    *,
+    provider,
+    directory,
+    username,
+    password,
+    host,
+    port,
+    database,
+    schema=None,
+    one=False,
+    id_=None,
+):
     if schema is None:
         schema = "public"
 
     match provider:
         case "postgresql":
-            conn = psycopg2.connect(user=username, password=password, host=host,
-                                    port=port, database=database)
+            conn = psycopg2.connect(
+                user=username,
+                password=password,
+                host=host,
+                port=port,
+                database=database,
+            )
             with conn:
                 with conn.cursor() as cur:
                     cur.execute(f"SET search_path TO {schema}")
-                    cur.execute("""
+                    cur.execute(
+                        """
                         CREATE TABLE IF NOT EXISTS _pygration_migrations (
                             id BIGINT PRIMARY KEY,
                             name TEXT NOT NULL,
                             executed_at TIMESTAMP DEFAULT NOW() NOT NULL
                         );
-                    """)
+                    """
+                    )
                     cur.execute("SELECT * FROM _pygration_migrations;")
                     existing_mids = [m[0] for m in cur.fetchall()]
 
                     new_migrations = []
-                    for entry in sorted(os.scandir(directory),
-                                        key=lambda e: e.name):
+                    for entry in sorted(os.scandir(directory), key=lambda e: e.name):
                         if entry.is_file() and entry.name.endswith(".sql"):
                             mid, name = entry.name[:-4].split("_", 1)
                             mid = int(mid)
                             if mid not in existing_mids:
-                                new_migrations.append({
-                                    "id": mid,
-                                    "name": name,
-                                    "query": _get_query(entry, section="up"),
-                                })
+                                new_migrations.append(
+                                    {
+                                        "id": mid,
+                                        "name": name,
+                                        "query": _get_query(entry, section="up"),
+                                    }
+                                )
                                 if one:
                                     break
                                 elif id_ == mid:
@@ -70,22 +89,40 @@ def migrate(*, provider, directory, username, password, host, port, database,
 
                     for m in new_migrations:
                         cur.execute(m["query"])
-                        cur.execute(f"""
+                        cur.execute(
+                            f"""
                             INSERT INTO _pygration_migrations (id, name)
                             VALUES ({m["id"]}, '{m["name"]}');
-                        """)
+                        """
+                        )
             conn.close()
 
 
-def rollback(*, provider, directory, username, password, host, port, database,
-             schema=None, one=False, id_=None):
+def rollback(
+    *,
+    provider,
+    directory,
+    username,
+    password,
+    host,
+    port,
+    database,
+    schema=None,
+    one=False,
+    id_=None,
+):
     if schema is None:
         schema = "public"
 
     match provider:
         case "postgresql":
-            conn = psycopg2.connect(user=username, password=password, host=host,
-                                    port=port, database=database)
+            conn = psycopg2.connect(
+                user=username,
+                password=password,
+                host=host,
+                port=port,
+                database=database,
+            )
             with conn:
                 with conn.cursor() as cur:
                     cur.execute(f"SET search_path TO {schema}")
@@ -93,17 +130,19 @@ def rollback(*, provider, directory, username, password, host, port, database,
                     existing_mids = [m[0] for m in cur.fetchall()]
 
                     rollbacks = []
-                    for entry in sorted(os.scandir(directory),
-                                        key=lambda e: e.name,
-                                        reverse=True):
+                    for entry in sorted(
+                        os.scandir(directory), key=lambda e: e.name, reverse=True
+                    ):
                         if entry.is_file() and entry.name.endswith(".sql"):
                             mid = entry.name.split("_", 1)[0]
                             mid = int(mid)
                             if mid in existing_mids:
-                                rollbacks.append({
-                                    "id": mid,
-                                    "query": _get_query(entry, section="down"),
-                                })
+                                rollbacks.append(
+                                    {
+                                        "id": mid,
+                                        "query": _get_query(entry, section="down"),
+                                    }
+                                )
                                 if one:
                                     break
                                 elif id_ == mid:
@@ -111,22 +150,28 @@ def rollback(*, provider, directory, username, password, host, port, database,
 
                     for r in rollbacks:
                         cur.execute(r["query"])
-                        cur.execute(f"""
-                            DELETE FROM _pygration_migrations 
+                        cur.execute(
+                            f"""
+                            DELETE FROM _pygration_migrations
                             WHERE id = {r["id"]};
-                        """)
+                        """
+                        )
             conn.close()
 
 
-def print_details(*, provider, username, password, host, port, database,
-                  schema=None):
+def print_details(*, provider, username, password, host, port, database, schema=None):
     if schema is None:
         schema = "public"
 
     match provider:
         case "postgresql":
-            conn = psycopg2.connect(user=username, password=password, host=host,
-                                    port=port, database=database)
+            conn = psycopg2.connect(
+                user=username,
+                password=password,
+                host=host,
+                port=port,
+                database=database,
+            )
             with conn:
                 with conn.cursor() as cur:
                     cur.execute(f"SET search_path TO {schema}")
@@ -134,15 +179,20 @@ def print_details(*, provider, username, password, host, port, database,
                     migrations = cur.fetchall()
 
                     id_col_width = len(str(migrations[-1][0]))
-                    name_col_width = len(
-                        max(migrations, key=lambda m: len(m[1]))[1]
+                    name_col_width = len(max(migrations, key=lambda m: len(m[1]))[1])
+                    header = (
+                        f"{'ID'.ljust(id_col_width)} | "
+                        f"{'NAME'.ljust(name_col_width)} | "
+                        f"EXECUTED AT"
                     )
-                    header = (f"{"ID".ljust(id_col_width)} | "
-                              f"{"NAME".ljust(name_col_width)} | EXECUTED AT")
-                    records = [(f"{str(m[0]).ljust(id_col_width)} | "
-                                f"{m[1].ljust(name_col_width)} | "
-                                f"{m[2]:%Y-%m-%d}")
-                               for m in migrations]
+                    records = [
+                        (
+                            f"{str(m[0]).ljust(id_col_width)} | "
+                            f"{m[1].ljust(name_col_width)} | "
+                            f"{m[2]:%Y-%m-%d}"
+                        )
+                        for m in migrations
+                    ]
                     header_width = len(header)
                     record_width = len(max(records, key=len))
                     if header_width > record_width:

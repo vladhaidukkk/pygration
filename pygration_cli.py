@@ -1,8 +1,8 @@
 import argparse
-import tomllib
-import pathlib
 import os
+import pathlib
 import re
+import tomllib
 
 from dotenv import load_dotenv
 
@@ -21,9 +21,9 @@ class Config:
                     file = default
                     break
             else:
-                raise FileNotFoundError(f"neither {
-                    " nor ".join(Config.DEFAULTS)
-                } exist")
+                raise FileNotFoundError(
+                    f"neither {' nor '.join(Config.DEFAULTS)} exist"
+                )
 
         try:
             with open(file, "rb") as file_obj:
@@ -33,8 +33,7 @@ class Config:
                 else:
                     self._config = tomllib.load(file_obj)
         except FileNotFoundError:
-            raise FileNotFoundError(f"configuration file '{file}' doesn't "
-                                    f"exist")
+            raise FileNotFoundError(f"configuration file '{file}' doesn't " f"exist")
 
     @staticmethod
     def _inject_env_var(value):
@@ -90,7 +89,7 @@ def create_parser():
         "-c",
         "--config",
         type=pathlib.Path,
-        help=f"pygration config (default: {", ".join(Config.DEFAULTS)})",
+        help=f"pygration config (default: {', '.join(Config.DEFAULTS)})",
     )
     subparsers = parser.add_subparsers(
         title="Commands",
@@ -110,7 +109,7 @@ def create_parser():
         help="apply migrations",
         description="Apply migrations",
         epilog="Priority of options: --one over --id. If no option is "
-               "specified, all migrations will be applied"
+        "specified, all migrations will be applied",
     )
     migrate.add_argument(
         "-o",
@@ -130,7 +129,7 @@ def create_parser():
         help="rollback migrations",
         description="Rollback migrations",
         epilog="Priority of options: --one over --id. If no option is "
-               "specified, all migrations will be rolled back"
+        "specified, all migrations will be rolled back",
     )
     rollback.add_argument(
         "-o",
@@ -169,9 +168,7 @@ def main():
                 try:
                     pygration.create(args.name, directory=config.dir)
                 except FileNotFoundError:
-                    parser.error(
-                        f"directory '{config.dir}' doesn't exist"
-                    )
+                    parser.error(f"directory '{config.dir}' doesn't exist")
             case "migrate":
                 # todo: give a feedback what have been done (maybe return a
                 #  value of successfully applied migrations and log it)

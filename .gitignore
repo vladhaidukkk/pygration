@@ -3,9 +3,9 @@
 .venv/
 venv/
 __pycache__/
+.mypy_cache/
 
 # temporary for development
 pygration.toml
 migrations/
 .env
-pyproject.toml
