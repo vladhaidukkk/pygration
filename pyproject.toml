@@ -4,12 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pygration"
-version = "0.0.2"
+version = "0.0.3"
+description = "Pygration is a powerful and easy-to-use database migration library, designed to simplify the process of managing and applying database schema changes"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Vladyslav Haiduk", email = "the.vladhaiduk@gmail.com" },
+]
+dependencies = [
+    "python-dotenv==1.0.0",
+    "psycopg2==2.9.9",
+]
 
 [project.scripts]
 pygration = "pygration_cli:main"
 
 [tool.setuptools]
+license-files = ["LICENSE"]
 py-modules = ["pygration_cli"]
 packages = ["pygration"]
 
