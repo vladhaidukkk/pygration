@@ -129,12 +129,20 @@ def create_parser():
         "rollback",
         help="rollback migrations",
         description="Rollback migrations",
+        epilog="Priority of options: --one over --id. If no option is "
+               "specified, all migrations will be rolled back"
     )
     rollback.add_argument(
-        "-p",
-        "--prev-one",
+        "-o",
+        "--one",
         action="store_true",
         help="rollback only the previous migration",
+    )
+    rollback.add_argument(
+        "-i",
+        "--id",
+        type=int,
+        help="rollback migrations up to the specified id",
     )
 
     # info = subparsers.add_parser(
@@ -189,7 +197,8 @@ def main():
                     port=config.port,
                     database=config.database,
                     schema=config.schema,
-                    single=args.prev_one,
+                    one=args.one,
+                    id_=args.id,
                 )
 
 

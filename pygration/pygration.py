@@ -78,7 +78,7 @@ def migrate(*, provider, directory, username, password, host, port, database,
 
 
 def rollback(*, provider, directory, username, password, host, port, database,
-             schema=None, single=False):
+             schema=None, one=False, id_=None):
     if schema is None:
         schema = "public"
 
@@ -98,12 +98,15 @@ def rollback(*, provider, directory, username, password, host, port, database,
                                         reverse=True):
                         if entry.is_file() and entry.name.endswith(".sql"):
                             mid = entry.name.split("_", 1)[0]
-                            if int(mid) in existing_mids:
+                            mid = int(mid)
+                            if mid in existing_mids:
                                 rollbacks.append({
                                     "id": mid,
                                     "query": _get_query(entry, section="down"),
                                 })
-                                if single:
+                                if one:
+                                    break
+                                elif id_ == mid:
                                     break
 
                     for r in rollbacks:
